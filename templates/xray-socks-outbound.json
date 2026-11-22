@@ -1,0 +1,18 @@
+{
+  "tag": "iproyal",
+  "protocol": "socks",
+  "settings": {
+    "servers": [
+      {
+        "address": "PROXY_HOST",
+        "port": 12324,
+        "users": [
+          {
+            "user": "PROXY_USER",
+            "pass": "PROXY_PASS"
+          }
+        ]
+      }
+    ]
+  }
+}
