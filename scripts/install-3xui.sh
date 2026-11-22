@@ -56,13 +56,11 @@ fi
 
 if [[ "$ENABLE_UFW" == "1" ]]; then
   command -v ufw >/dev/null 2>&1 || apt-get install -y ufw
-  log "Configuring UFW (SSH, 443/tcp, 8388/tcp+udp). Panel stays closed."
+  log "Configuring UFW (SSH, 443/tcp). Panel stays closed."
   ufw default deny incoming
   ufw default allow outgoing
   ufw allow OpenSSH || ufw allow 22/tcp
   ufw allow 443/tcp
-  ufw allow 8388/tcp
-  ufw allow 8388/udp
   ufw --force enable
 fi
 

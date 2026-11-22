@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Create (or reuse) a Debian 12 Azure VM and open the VPN firewall ports.
 #
-# Opens: SSH (22/tcp) from your current public IP, 443/tcp and 8388/tcp+udp
-# from anywhere. The 3x-ui panel port is NOT opened; use an SSH tunnel
+# Opens: SSH (22/tcp) from your current public IP, and 443/tcp from anywhere.
+# The 3x-ui panel port is NOT opened; use an SSH tunnel
 # (scripts/ssh-tunnel-panel.sh).
 #
 # Usage:
@@ -90,15 +90,16 @@ ensure_rule allow-vless-443 \
   --source-address-prefixes '*' --destination-port-ranges 443 \
   --description "VLESS Reality"
 
-ensure_rule allow-ss-8388-tcp \
-  --priority 1110 --direction Inbound --access Allow --protocol Tcp \
-  --source-address-prefixes '*' --destination-port-ranges 8388 \
-  --description "Shadowsocks TCP (Outline)"
-
-ensure_rule allow-ss-8388-udp \
-  --priority 1120 --direction Inbound --access Allow --protocol Udp \
-  --source-address-prefixes '*' --destination-port-ranges 8388 \
-  --description "Shadowsocks UDP (Outline)"
+# Drop 8388 rules left over from earlier revisions of this skill.
+delete_rule() {
+  local name="$1"
+  if az network nsg rule show --resource-group "$RESOURCE_GROUP" --nsg-name "$NSG_NAME" --name "$name" >/dev/null 2>&1; then
+    az network nsg rule delete --resource-group "$RESOURCE_GROUP" --nsg-name "$NSG_NAME" --name "$name" --output none
+    log "Removed leftover NSG rule $name"
+  fi
+}
+delete_rule allow-ss-8388-tcp
+delete_rule allow-ss-8388-udp
 
 PUBLIC_IP="$(az vm list-ip-addresses --resource-group "$RESOURCE_GROUP" --name "$VM_NAME" \
   --query "[0].virtualMachine.network.publicIpAddresses[0].ipAddress" -o tsv)"

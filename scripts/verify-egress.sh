@@ -35,8 +35,8 @@ if [[ -z "$PROXY_HOST" ]]; then
   log "Client checklist:"
   log "  1. nc -zv ${VPS_IP:-VM_IP} 443"
   log "  2. Import the vless:// link, connect, open https://ipinfo.io/json — expect the VM IP."
-  log "  3. Optional: import the ss:// link in Outline and repeat."
-  log "  4. https://browserleaks.com/dns and /webrtc for leak checks."
+  log "  3. https://browserleaks.com/dns and /webrtc for leak checks."
+  log "  4. Optional: https://speed.cloudflare.com"
   exit 0
 fi
 
@@ -81,10 +81,9 @@ log "SOCKS egress IP: $PROXY_IP  ASN/org: $PROXY_ORG"
 log "If is_datacenter is true, this IP will not look like a residential ISP — pick another."
 log "Also open https://scamalytics.com/ip/${PROXY_IP} in a browser."
 echo
-log "Client checklist (after importing the generated links):"
+log "Client checklist (after importing the generated vless:// link):"
 log "  1. nc -zv ${VPS_IP:-VM_IP} 443   # must succeed before blaming Xray"
 log "  2. Connect with VLESS, then https://ipinfo.io/json — must show $PROXY_IP, not ${HOST_IP:-the VM IP}"
-log "  3. Repeat with the Outline ss:// link"
-log "  4. https://browserleaks.com/dns  — no home-ISP or VM-datacentre resolvers"
-log "  5. https://browserleaks.com/webrtc"
-log "  6. Optional speed test: https://speed.cloudflare.com"
+log "  3. https://browserleaks.com/dns  — no home-ISP or VM-datacentre resolvers"
+log "  4. https://browserleaks.com/webrtc"
+log "  5. Optional: https://speed.cloudflare.com"

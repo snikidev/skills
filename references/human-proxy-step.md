@@ -19,21 +19,34 @@ Recommended starting point (as of November 2026; confirm live pricing):
 - Product: Dedicated / static ISP, **UK, London**
 - Duration: 30 days is enough to test (a 24-hour trial, around $1.80, is
   safer than a long commitment)
-- Protocol: SOCKS5 with **UDP** support (IPRoyal's default SOCKS port is often
-  `12324`)
+- Protocol: SOCKS5 (IPRoyal's default SOCKS port is often `12324`)
 - Auth: username/password (preferred if you might rebuild the VM) or an IP
   whitelist locked to the VM's single public IPv4
 
 Price is typically a few dollars per IP per 30 days, not hundreds.
 
+UDP support is nice for HTTP/3 and real-time calls, but it is not required
+for this skill: the inbound is VLESS Reality over TCP 443, and browsers fall
+back from HTTP/3 to HTTP/2 when UDP is blocked.
+
+## Port restrictions (Decodo and similar)
+
+This VPN's *inbound* is TCP 443 (client to VM). A proxy's destination-port
+list applies to the *egress* hop (VM through the SOCKS proxy to websites).
+
+Some ISP products, including Decodo (formerly Smartproxy) Static Residential
+ISP plans, allow only destination ports `80`, `443`, `563`, `8443`, and `43`.
+That is enough for ordinary HTTP and HTTPS, so Decodo can work for typical
+web browsing through VLESS Reality. It still breaks plain DNS (53), WebRTC
+STUN (3478), SSH, and most other UDP. Prefer a proxy without that restriction
+(IPRoyal's dedicated ISP product has been in that category) if you care about
+those; do not reject Decodo solely because of the port list.
+
 ## What to avoid
 
 - **Rotating residential proxies billed per GB.** These are the products that
-  show figures like ~$800 for 200 GB. They are the wrong tool for a always-on
+  show figures like ~$800 for 200 GB. They are the wrong tool for an always-on
   personal VPN.
-- **Decodo (formerly Smartproxy) Static Residential ISP plans** that restrict
-  destination ports to `80`, `443`, `563`, `8443`, and `43`. That breaks
-  non-web traffic (plain DNS, WebRTC STUN, SSH-over-VPN, and most UDP).
 - Shared / rotating pools if you need a stable exit IP.
 
 ## After you have the details

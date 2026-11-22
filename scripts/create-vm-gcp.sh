@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Create (or reuse) a Debian 12 GCE VM and open the VPN firewall ports.
 #
-# Opens: SSH (22/tcp) from your current public IP, 443/tcp and 8388/tcp+udp
-# from anywhere, tagged onto this VM only. The 3x-ui panel port is NOT
-# opened; use an SSH tunnel (scripts/ssh-tunnel-panel.sh).
+# Opens: SSH (22/tcp) from your current public IP, and 443/tcp from
+# anywhere, tagged onto this VM only. The 3x-ui panel port is NOT opened;
+# use an SSH tunnel (scripts/ssh-tunnel-panel.sh).
 #
 # Usage:
 #   ./scripts/create-vm-gcp.sh
@@ -64,12 +64,11 @@ ensure_fw "${TAG}-vless" \
   --target-tags="$TAG" \
   --description="VLESS Reality"
 
-ensure_fw "${TAG}-ss" \
-  --network "$NETWORK" \
-  --allow=tcp:8388,udp:8388 \
-  --source-ranges=0.0.0.0/0 \
-  --target-tags="$TAG" \
-  --description="Shadowsocks Outline"
+# Drop the 8388 rule left over from earlier revisions of this skill.
+if gcloud compute firewall-rules describe "${TAG}-ss" --project "$PROJECT" >/dev/null 2>&1; then
+  gcloud compute firewall-rules delete "${TAG}-ss" --project "$PROJECT" --quiet
+  log "Removed leftover firewall rule ${TAG}-ss"
+fi
 
 if gcloud compute instances describe "$VM_NAME" --project "$PROJECT" --zone "$ZONE" >/dev/null 2>&1; then
   log "VM $VM_NAME already exists; not recreating"

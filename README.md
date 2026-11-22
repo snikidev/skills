@@ -2,10 +2,9 @@
 
 An [Agent Skill](https://agentskills.io/specification) that walks an agent
 (Claude Code, Cursor, OpenCode, and anything else that reads `SKILL.md`)
-through deploying a personal **VLESS Reality** and/or **Outline-compatible
-Shadowsocks** VPN on [3x-ui](https://github.com/MHSanaei/3x-ui), on Azure or
-GCP, with an optional **UK static ISP SOCKS5** egress proxy that you buy
-yourself.
+through deploying a personal **VLESS Reality** VPN on
+[3x-ui](https://github.com/MHSanaei/3x-ui), on Azure or GCP, with an optional
+**UK static ISP SOCKS5** egress proxy that you buy yourself.
 
 This repository is a starting point, not a battle-tested appliance. **It has
 not been run end-to-end against a live VM and a real ISP proxy.** Read
@@ -26,14 +25,12 @@ instead of WARP.
 ## What you get
 
 - A Debian 12 VM (or reuse of one you already have)
-- Firewall: SSH from your IP, TCP 443, TCP+UDP 8388. The panel stays off the
-  public internet (SSH tunnel).
+- Firewall: SSH from your IP, TCP 443. The panel stays off the public
+  internet (SSH tunnel).
 - VLESS + XTLS-Reality on 443 (`xtls-rprx-vision`)
-- Shadowsocks on 8388 with `chacha20-ietf-poly1305` (Outline does not support
-  `2022-blake3-*`)
 - Optional SOCKS5 outbound tagged `iproyal`, first in the outbound list, with
   `geoip:private` → `direct`
-- `vless://` and `ss://` links plus QR codes
+- A `vless://` link plus a QR code
 - A short client test checklist
 
 ## Install the skill
@@ -57,7 +54,7 @@ Project-local copies also work: `.claude/skills/`, `.cursor/skills/`, or
 `.opencode/skills/` in the repo you are working in. Cursor and OpenCode will
 often also pick up skills from `~/.claude/skills/`.
 
-Then ask the agent to deploy a VLESS / Outline VPN (and mention Azure or GCP,
+Then ask the agent to deploy a VLESS Reality VPN (and mention Azure or GCP,
 and whether you have an ISP proxy). It should load this skill and follow
 `SKILL.md`.
 
@@ -69,11 +66,13 @@ The agent can do everything except pay for the proxy. If you want destination
 sites to see a UK ISP IP rather than a cloud IP:
 
 1. Buy a **static / dedicated ISP** proxy yourself (IPRoyal ISP Proxies, UK
-   London, SOCKS5 with UDP, is the usual recommendation). A 24-hour trial is
-   cheaper than guessing.
+   London, is the usual recommendation). A 24-hour trial is cheaper than
+   guessing.
 2. Do **not** buy rotating residential bandwidth billed per GB.
-3. Do **not** use an ISP product that only allows destination ports 80, 443,
-   563, 8443, and 43 (Decodo's ISP plans have been in that category).
+3. Some ISP products, including Decodo's, only allow destination ports 80,
+   443, 563, 8443, and 43. That is enough for ordinary HTTPS through this
+   VLESS (TCP 443) setup, but not for plain DNS, WebRTC STUN, SSH, or most
+   UDP. Choose a proxy without that restriction if you need those.
 4. Paste host, port, username, and password into the agent or a local `.env`.
    Never commit them.
 

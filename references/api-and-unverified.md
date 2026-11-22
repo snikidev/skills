@@ -15,7 +15,7 @@ repository.
 | `GET` | `/csrf-token` | CSRF token for cookie sessions. Bearer callers can skip CSRF. |
 | `GET` | `/panel/api/inbounds/list` | List inbounds |
 | `POST` | `/panel/api/inbounds/add` | Create an inbound. `settings`, `streamSettings`, and `sniffing` may be nested JSON objects. |
-| `GET` | `/panel/api/inbounds/allLinks` | `vless://` / `ss://` links. Host follows the request `Host` header unless a trusted proxy is configured. |
+| `GET` | `/panel/api/inbounds/allLinks` | Share links (this skill uses `vless://`). Host follows the request `Host` header unless a trusted proxy is configured. |
 | `POST` | `/panel/api/xray/` | Read the Xray template. Docs say `obj.xraySetting` is a JSON **string**. |
 | `POST` | `/panel/api/xray/update` | Form fields: `xraySetting` (required), `outboundTestUrl` (optional). |
 | `POST` | `/panel/api/server/restartXrayService` | Reload Xray |
@@ -31,10 +31,6 @@ VLESS Reality inbound JSON follows the v3.11.0 golden fixture
 panel writes Reality's donor as `target` (`dest` is accepted as an alias).
 `mldsa65Seed`, `mldsa65Verify`, `minClientVer`, and `maxClientVer` are left
 empty so current clients can handshake.
-
-Shadowsocks uses a single-user AEAD-2018 inbound (`chacha20-ietf-poly1305`).
-Inbound-level `method` + `password` are authoritative. Do not use
-`2022-blake3-*` if the official Outline client must connect.
 
 SOCKS outbounds use Xray's `settings.servers[].users[]` shape (see
 `frontend/src/schemas/protocols/outbound/socks.ts`).
@@ -84,9 +80,9 @@ Be honest with the user about these:
    `curl -I https://www.microsoft.com` on the VM before locking the inbound.
    Skip donors that 301/302 or that negotiate post-quantum TLS if clients
    cannot handshake.
-6. **IPRoyal pricing, UDP port, and fair-use caps** change. Confirm on the
+6. **IPRoyal pricing and fair-use caps** change. Confirm on the
    provider site at purchase time.
-7. **Through-the-tunnel egress** (VLESS or Outline client → ipinfo shows the
+7. **Through-the-tunnel egress** (VLESS client → ipinfo shows the
    proxy IP) cannot be fully proven by `curl --proxy socks5h://...` alone.
    That command only proves the proxy itself. The client checklist in
    `scripts/verify-egress.sh` is the real test and has not been run here.

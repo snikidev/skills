@@ -1,19 +1,18 @@
 ---
 name: vless-vpn-3xui-skill
-description: Deploy a personal VLESS Reality and/or Outline-compatible Shadowsocks VPN on 3x-ui (Azure or GCP), optionally chaining egress through a user-supplied UK static ISP SOCKS5 proxy. Use when the user asks to set up VLESS, XTLS-Reality, 3x-ui, Outline/Shadowsocks on a VM, or to exit a cloud VPN via IPRoyal or another dedicated ISP proxy.
+description: Deploy a personal VLESS Reality VPN on 3x-ui (Azure or GCP), optionally chaining egress through a user-supplied UK static ISP SOCKS5 proxy. Use when the user asks to set up VLESS, XTLS-Reality, or 3x-ui on a VM, or to exit a cloud VPN via IPRoyal or another dedicated ISP proxy.
 license: MIT
 metadata:
   author: snikidev
-  version: "0.1.0"
+  version: "0.2.0"
   xui_pin: v3.11.0
 ---
 
-# VLESS Reality + Outline on 3x-ui
+# VLESS Reality on 3x-ui
 
 Automate a personal anti-DPI VPN on a new or existing Azure or GCP VM:
 
 - VLESS + XTLS-Reality on TCP 443 (`xtls-rprx-vision`, uTLS chrome)
-- Optional Shadowsocks inbound on 8388 with `chacha20-ietf-poly1305` (official Outline clients do not speak Shadowsocks-2022)
 - Optional SOCKS5 outbound so destination sites see a static ISP IP, not the cloud VM
 
 Configure the panel through its HTTP API, not by clicking the UI. This skill has **not** been run end-to-end against a live VM and proxy; be explicit about that, and read [references/api-and-unverified.md](references/api-and-unverified.md).
@@ -23,13 +22,13 @@ https://www.sniki.dev/posts/vless-vpn-gcp-setup/ — keep those Reality and clie
 
 ## Do not buy the proxy
 
-You may create the VM, open firewall ports, SSH in, install 3x-ui, write inbounds, and add a SOCKS outbound. You must **not** purchase the proxy, enter payment details, or write credentials into git.
+You may create the VM, open firewall ports, SSH in, install 3x-ui, write the inbound, and add a SOCKS outbound. You must **not** purchase the proxy, enter payment details, or write credentials into git.
 
 If the user wants ISP egress, stop and run the **human step** in [references/human-proxy-step.md](references/human-proxy-step.md):
 
-- Buy a **static/dedicated ISP** proxy (e.g. IPRoyal ISP Proxies, UK London, ~a few dollars / 30 days, SOCKS5 with UDP).
+- Buy a **static/dedicated ISP** proxy (e.g. IPRoyal ISP Proxies, UK London, typically a few dollars / 30 days).
 - Avoid rotating residential billed per GB (prices like ~$800 / 200 GB).
-- Avoid Decodo ISP plans limited to destination ports 80, 443, 563, 8443, and 43.
+- Decodo ISP plans that only allow destination ports 80, 443, 563, 8443, and 43 are usable for ordinary HTTPS through this VLESS (TCP 443) setup, but they still block plain DNS, WebRTC STUN, SSH, and most UDP. Prefer IPRoyal if those matter; do not treat Decodo as automatically unsuitable.
 
 Wait until they paste `PROXY_HOST`, `PROXY_PORT`, `PROXY_USER`, and `PROXY_PASS`. If they skip this, continue; egress is the VM IP.
 
@@ -42,7 +41,6 @@ Ask only for what is missing:
 | Cloud provider | — | `azure` or `gcp`. An already-running Debian 12/Ubuntu VM is also fine; skip VM create. |
 | Region / zone | Azure `uksouth`, GCP `europe-west2-a` | London is the right default when the proxy is also in London. |
 | VM size | Azure `Standard_B2s`, GCP `e2-small` | Debian 12. |
-| Protocols | `both` | `vless-reality`, `shadowsocks`, or `both`. |
 | SOCKS5 proxy | unset | Optional; see the human step. Tag the outbound `iproyal`. |
 | Reality donor | `www.microsoft.com:443` | Re-test; see [references/donor-sites.md](references/donor-sites.md). |
 
@@ -66,9 +64,8 @@ Each script is idempotent enough to reuse an existing VM with the same name. It 
 
 - TCP 22 from the operator's current public IP only
 - TCP 443 from anywhere (VLESS Reality)
-- TCP+UDP 8388 from anywhere (Shadowsocks / Outline)
 
-It does **not** publish the 3x-ui panel port. Reach the panel with an SSH tunnel.
+It does **not** publish the 3x-ui panel port. Reach the panel with an SSH tunnel. Re-running also deletes leftover port-8388 rules from earlier revisions of this skill.
 
 ### 2. Install 3x-ui (official script, pinned)
 
@@ -87,7 +84,7 @@ sudo XUI_NONINTERACTIVE=1 bash /tmp/3x-ui-install-v3.11.0.sh v3.11.0
 
 Default pin: **v3.11.0** (Xray-core v26.10.21). Override with `XUI_VERSION` only after reading that tag's notes. Credentials are written to `/etc/x-ui/install-result.env` (mode 600) on the VM. Do not copy that file into the repo.
 
-Optional host hardening in the installer: BBR on by default (`ENABLE_BBR=1`), UFW off by default (`ENABLE_UFW=1` to allow 22/443/8388 and leave the panel closed).
+Optional host hardening in the installer: BBR on by default (`ENABLE_BBR=1`), UFW off by default (`ENABLE_UFW=1` to allow 22/443 and leave the panel closed).
 
 ### 3. Open a panel tunnel
 
@@ -105,11 +102,11 @@ export XUI_API_TOKEN="..."          # preferred
 # or: export XUI_USERNAME=... XUI_PASSWORD=...
 ```
 
-### 4. Create inbounds via the API
+### 4. Create the VLESS Reality inbound via the API
 
 ```bash
 mkdir -p out && chmod 700 out
-python3 scripts/configure-inbounds.py --protocols both \
+python3 scripts/configure-inbounds.py \
   --dest www.microsoft.com:443 --sni www.microsoft.com \
   --state-out out/state.json
 ```
@@ -117,9 +114,8 @@ python3 scripts/configure-inbounds.py --protocols both \
 This calls `GET /panel/api/server/getNewX25519Cert` for Reality keys, allocates a UUID and an 8-byte shortId, and `POST /panel/api/inbounds/add`:
 
 - VLESS, listen IP empty (cloud NATs), port 443, flow `xtls-rprx-vision`, `network=tcp`, `security=reality`, `fingerprint=chrome`, empty mldsa65 / min/max client versions
-- Shadowsocks, port 8388, `chacha20-ietf-poly1305`, `network=tcp,udp`
 
-If an inbound with the same protocol and port already exists, it is reused. Then `POST /panel/api/server/restartXrayService`.
+If a VLESS inbound on that port already exists, it is reused. Then `POST /panel/api/server/restartXrayService`.
 
 Before locking the donor, on the VM: `curl -I https://www.microsoft.com` (no 301/302) and `xray tls ping www.microsoft.com` (no post-quantum if clients cannot handshake). See [references/donor-sites.md](references/donor-sites.md).
 
@@ -146,21 +142,20 @@ Keep the `api` → `api` and `bittorrent` → `blocked` rules.
 
 `verify-egress.sh` curls `ipinfo.io` from the host and again through `socks5h://` (remote DNS). The proxy IP must differ from the VM IP and should look like an ISP ASN. That proves the proxy, not the VLESS path — still have the user test from a client (checklist below).
 
-### 6. Emit links, QR codes, and the test checklist
+### 6. Emit the link, QR code, and the test checklist
 
 ```bash
 PUBLIC_IP=x.x.x.x STATE_FILE=out/state.json ./scripts/make-links.sh
 ```
 
-Give the user the `vless://` and `ss://` URLs (and QR images under `out/` if `qrencode` is installed). Use the VM's public IP, never the panel hostname or `127.0.0.1`. Reality links that get a stale UUID, `sid`, or `pbk` after a later inbound change fail silently (the server forwards bad clients to the real donor site). Re-run `make-links.sh` after any inbound edit.
+Give the user the `vless://` URL (and a QR image under `out/` if `qrencode` is installed). Use the VM's public IP, never the panel hostname or `127.0.0.1`. Reality links that get a stale UUID, `sid`, or `pbk` after a later inbound change fail silently (the server forwards bad clients to the real donor site). Re-run `make-links.sh` after any inbound edit.
 
 ## Client test checklist
 
 1. From the client network: `nc -zv VM_IP 443` — if this fails, it is a firewall or path problem, not Xray.
 2. Import `vless://` into a Reality-capable client (e.g. Streisand, Rabbithole, v2rayNG, v2rayN, command-line xray). Connect. Open https://ipinfo.io/json — expect the **proxy** IP if one was configured, otherwise the VM IP.
-3. Repeat with the `ss://` link in the official Outline client (or the same Xray clients).
-4. https://browserleaks.com/dns and https://browserleaks.com/webrtc — no home-ISP or VM-datacentre leaks.
-5. Optional: https://speed.cloudflare.com and a short voice call if UDP matters.
+3. https://browserleaks.com/dns and https://browserleaks.com/webrtc — no home-ISP or VM-datacentre leaks.
+4. Optional: https://speed.cloudflare.com. Voice/video calls need a proxy that allows UDP to non-443 ports.
 
 ## Security rules for the agent
 

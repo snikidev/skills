@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Build vless:// and ss:// links (and optional QR codes) from inbound state.
+# Build a vless:// link (and an optional QR code) from inbound state.
 #
 # The panel /panel/api/inbounds/allLinks response uses the Host header of the
 # request (often 127.0.0.1 via the SSH tunnel). This script always writes
-# links that use PUBLIC_IP, which is what Reality needs.
+# a link that uses PUBLIC_IP, which is what Reality needs.
 #
 # Usage:
 #   PUBLIC_IP=x.x.x.x STATE_FILE=./out/state.json ./scripts/make-links.sh
@@ -19,7 +19,6 @@ PUBLIC_IP="${PUBLIC_IP:-}"
 STATE_FILE="${STATE_FILE:-}"
 OUT_DIR="${OUT_DIR:-./out}"
 VLESS_PORT="${VLESS_PORT:-443}"
-SS_PORT="${SS_PORT:-8388}"
 SNI="${REALITY_SNI:-${SNI:-www.microsoft.com}}"
 
 if [[ -z "$PUBLIC_IP" ]]; then
@@ -31,19 +30,16 @@ fi
 mkdir -p "$OUT_DIR"
 chmod 700 "$OUT_DIR" || true
 
-python3 "$SCRIPT_DIR/render_links.py" "$PUBLIC_IP" "$STATE_FILE" "$OUT_DIR" "$VLESS_PORT" "$SS_PORT" "$SNI"
+python3 "$SCRIPT_DIR/render_links.py" "$PUBLIC_IP" "$STATE_FILE" "$OUT_DIR" "$VLESS_PORT" "$SNI"
 
 if command -v qrencode >/dev/null 2>&1 && [[ -s "$OUT_DIR/links.txt" ]]; then
   while IFS= read -r link; do
     [[ -n "$link" ]] || continue
-    kind="link"
-    [[ "$link" == vless://* ]] && kind="vless"
-    [[ "$link" == ss://* ]] && kind="ss"
-    png="$OUT_DIR/qr-${kind}.png"
+    png="$OUT_DIR/qr-vless.png"
     qrencode -t PNG -o "$png" "$link"
     chmod 600 "$png" || true
-    log "QR ($kind) written to $png"
-    log "Terminal QR ($kind):"
+    log "QR written to $png"
+    log "Terminal QR:"
     qrencode -t ANSIUTF8 "$link" >&2 || true
   done < "$OUT_DIR/links.txt"
 else
@@ -70,4 +66,4 @@ for item in links:
 " || log "allLinks fetch skipped"
 fi
 
-log "Links saved under $OUT_DIR/links.txt (mode 600). Re-export after any inbound change."
+log "Link saved under $OUT_DIR/links.txt (mode 600). Re-export after any inbound change."
