@@ -1,0 +1,5 @@
+.DS_Store
+*.bin
+*.itb
+*.fip
+nx62-flash/
