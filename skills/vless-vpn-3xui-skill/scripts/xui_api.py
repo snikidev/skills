@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Minimal 3x-ui HTTP API client (stdlib only).
 
-Verified against MHSanaei/3x-ui v3.11.0 official docs and
-frontend/src/pages/api-docs/endpoints.ts (read 2026-11-23):
+Verified against MHSanaei/3x-ui v3.11.0 official docs,
+frontend/src/pages/api-docs/endpoints.ts (read 2026-11-23) and the Go
+controllers / docs/public/openapi.json at tag v3.11.0 (re-read 2026-11-24):
 
-  POST /login
-  GET  /csrf-token          (cookie sessions; Bearer callers can skip CSRF)
+  GET  /csrf-token          (cookie sessions: call BEFORE /login; Bearer skips CSRF)
+  POST /login               (CSRF-protected in v3.11.0)
   GET  /panel/api/inbounds/list
   POST /panel/api/inbounds/add
   GET  /panel/api/inbounds/allLinks
@@ -108,14 +109,20 @@ class XUIClient:
     def login(self) -> None:
         if self.token:
             return
+        # v3.11.0 wraps POST /login in CSRFMiddleware (internal/web/controller/
+        # index.go), so a cookie session must mint a CSRF token *before* logging
+        # in: GET /csrf-token sets the session cookie and returns the token,
+        # which is then sent as X-CSRF-Token on /login and every unsafe call.
+        self._csrf = self._fetch_csrf()
         body = {
             "username": self.username,
             "password": self.password,
         }
-        data = self.request("POST", "/login", json_body=body, auth=False)
+        data = self.request("POST", "/login", json_body=body, auth=True)
         if not data.get("success", False):
             raise XUIError(f"login failed: {data.get('msg', data)}")
-        self._csrf = self._fetch_csrf()
+        # The session keeps the same CSRF token after login; refresh anyway.
+        self._csrf = self._fetch_csrf() or self._csrf
 
     def _fetch_csrf(self) -> Optional[str]:
         try:
@@ -226,6 +233,13 @@ class XUIClient:
             self.request("POST", "/panel/api/xray/"), "get xray template"
         )
         obj = data.get("obj") or {}
+        # v3.11.0 getXraySetting returns obj as a JSON *string* of
+        # {"xraySetting": <template object>, "inboundTags": ..., ...}.
+        if isinstance(obj, str):
+            try:
+                obj = json.loads(obj)
+            except json.JSONDecodeError as exc:
+                raise XUIError("POST /panel/api/xray/ obj was not valid JSON") from exc
         setting = obj.get("xraySetting", obj)
         if isinstance(setting, str):
             try:

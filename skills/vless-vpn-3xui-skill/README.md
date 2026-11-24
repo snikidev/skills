@@ -33,6 +33,33 @@ instead of WARP.
 - A `vless://` link plus a QR code
 - A short client test checklist
 
+## Requirements / Dependencies
+
+- Operator machine: `ssh` + an SSH public key, `curl`, `python3`, `jq`
+- **Cloud: the `az` (Azure) or `gcloud` (Google Cloud) CLI** is the default.
+  It's scriptable and you can read every create command before it runs; the
+  `create-vm-*.sh` scripts use it. Optional alternatives:
+  [Azure MCP Server](https://github.com/microsoft/mcp/tree/main/servers/Azure.Mcp.Server),
+  Google's [gcloud MCP server](https://github.com/googleapis/gcloud-mcp), or
+  the managed Compute Engine MCP server (`https://compute.googleapis.com/mcp`).
+- **What the cloud is used for**: the VM, its public IP, and the NSG / VPC
+  firewall rules.
+- **Auth**: `az login` + `az account set --subscription "<name>"`, or
+  `gcloud auth login` + `gcloud config set project <id>`.
+- **Least privilege**: not Owner. Azure Contributor scoped to the resource
+  group; GCP Compute Instance Admin (v1) + Compute Security Admin on the
+  project.
+- **Preflight**: `scripts/cloud-preflight.sh azure|gcp` is read-only. It
+  checks the CLI is installed, you're logged in, and the subscription/project
+  is the expected one (`AZURE_SUBSCRIPTION` / `GCP_PROJECT` in `.env`). It
+  prints the identity and subscription/project (names only). The create
+  scripts run it first and stop if it fails.
+
+After setup, manage the server with
+[vless-vpn-3xui-ops](../vless-vpn-3xui-ops/): users, routing, backups,
+upgrades, key rotation, drift, and cloud snapshot/firewall/resize/IP rotation.
+Every action is shown as a card and needs your go.
+
 ## Install the skill
 
 This skill lives in the [snikidev/skills](https://github.com/snikidev/skills)
@@ -135,7 +162,7 @@ SKILL.md                         # agent instructions (this is the skill)
 README.md
 LICENSE                          # MIT
 .env.example
-scripts/                         # operator + VM scripts
+scripts/                         # operator + VM scripts (incl. cloud-preflight.sh)
 templates/                       # SOCKS outbound / routing snippets
 references/                      # proxy buying, API notes, Reality donors
 ```

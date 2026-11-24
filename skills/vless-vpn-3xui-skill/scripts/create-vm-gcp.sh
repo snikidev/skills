@@ -36,7 +36,9 @@ fi
 log "GCP: project=$PROJECT zone=$ZONE machine=$MACHINE vm=$VM_NAME tag=$TAG"
 log "SSH will be allowed from $OPERATOR_IP"
 
-gcloud projects describe "$PROJECT" >/dev/null || die "gcloud cannot describe project $PROJECT; run: gcloud auth login"
+# Read-only preflight: CLI, login, project, identity. Prints names/ids only.
+GCP_PROJECT="$PROJECT" GCP_ZONE="$ZONE" VM_NAME="$VM_NAME" sh "$SCRIPT_DIR/cloud-preflight.sh" gcp >&2 \
+  || die "cloud preflight failed (see above); nothing was created"
 
 ensure_fw() {
   local name="$1"

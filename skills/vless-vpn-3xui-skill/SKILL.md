@@ -4,7 +4,7 @@ description: Deploy a personal VLESS Reality VPN on 3x-ui (Azure or GCP), option
 license: MIT
 metadata:
   author: snikidev
-  version: "0.2.0"
+  version: "0.3.0"
   xui_pin: v3.11.0
 ---
 
@@ -44,13 +44,53 @@ Ask only for what is missing:
 | SOCKS5 proxy | unset | Optional; see the human step. Tag the outbound `iproyal`. |
 | Reality donor | `www.microsoft.com:443` | Re-test; see [references/donor-sites.md](references/donor-sites.md). |
 
-Prerequisites on the operator machine: `az` or `gcloud` logged in, an SSH public key, `curl`, `python3`, `jq`. Never embed secrets in command history you then paste into chat.
+Prerequisites on the operator machine: see **Requirements / Dependencies** below. Never embed secrets in command history you then paste into chat.
+
+## Requirements / Dependencies
+
+| Need | For |
+| --- | --- |
+| `ssh` + an SSH public key, `curl`, `python3`, `jq` | install, tunnel, API scripts |
+| **Cloud CLI**: `az` (Azure) or `gcloud` (Google Cloud), logged in | step 1 (VM, public IP, firewall) |
+
+**Cloud access.** The default is the cloud **CLI**: every step is a plain
+command you can read and dry-run, and the `create-vm-*.sh` scripts use it.
+Optional alternatives, if your agent already has them: the **Azure MCP Server**
+([microsoft/mcp](https://github.com/microsoft/mcp/tree/main/servers/Azure.Mcp.Server),
+`npx -y @azure/mcp@latest server start`), Google's **gcloud MCP server**
+([googleapis/gcloud-mcp](https://github.com/googleapis/gcloud-mcp), preview),
+or the managed **Compute Engine MCP server** (`https://compute.googleapis.com/mcp`).
+With an MCP server, still run the preflight below and show the user each
+create command before it runs.
+
+- **What the cloud is used for**: creating the VM (Debian 12), its public IP
+  (Azure Standard static; GCP ephemeral by default), and the NSG / VPC firewall
+  rules (22 from your IP, 443 from anywhere; the panel port stays closed).
+- **Auth**: `az login` then `az account set --subscription "<name>"`, or
+  `gcloud auth login` then `gcloud config set project <id>`.
+- **Least privilege**: don't use Owner. Azure: `Contributor` scoped to the
+  resource group (`vless-3xui-rg`; create the group first, or have an admin do
+  it). GCP: `roles/compute.instanceAdmin.v1` + `roles/compute.securityAdmin`
+  on the project (a dedicated project is better still).
+- **Preflight**: `scripts/cloud-preflight.sh azure|gcp` (read-only) checks the
+  CLI is installed, you're logged in, and the active subscription/project is
+  the expected one (`AZURE_SUBSCRIPTION` / `GCP_PROJECT`). It prints the
+  identity, subscription/project and roles (names only, no tokens) and warns
+  on Owner. `create-vm-*.sh` run it first and stop if it fails. **Run it
+  yourself before step 1, show the user the identity and subscription/project,
+  and wait for their go before creating anything.**
+
+Day-2 management (users, routing, backups, upgrades, rotation, cloud
+snapshot/firewall/resize/IP rotation) is in the companion skill
+[vless-vpn-3xui-ops](../vless-vpn-3xui-ops/).
 
 ## Steps
 
 Work from a checkout of this skill so `scripts/` and `templates/` are available. Copy `.env.example` to `.env` locally if useful; do not commit it.
 
 ### 1. Create the VM and open the firewall
+
+First: `./scripts/cloud-preflight.sh azure` (or `gcp`). Show the user the `identity=` and `subscription=` / `project=` lines, and wait for their go.
 
 ```bash
 # Azure
@@ -168,3 +208,7 @@ Give the user the `vless://` URL (and a QR image under `out/` if `qrencode` is i
 ## If something already exists
 
 The user may already have a 3x-ui VM. Skip step 1 (and maybe step 2). Probe with SSH, read `install-result.env` or `x-ui settings`, then run steps 3–6. `configure-inbounds.py` and `add-proxy-outbound.py` are safe to re-run: they reuse a matching inbound and update the `iproyal` outbound in place.
+
+## After setup
+
+Use [vless-vpn-3xui-ops](../vless-vpn-3xui-ops/) for everything after day 1. It reuses `scripts/xui_api.py` and announces every action with a card: transport, endpoint, credential by name, read-only or write, rollback.

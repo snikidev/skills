@@ -11,12 +11,12 @@ repository.
 
 | Method | Path | Role |
 | --- | --- | --- |
-| `POST` | `/login` | Session cookie auth (`username`, `password`, optional `twoFactorCode`) |
+| `POST` | `/login` | Session cookie auth (`username`, `password`, optional `twoFactorCode`). CSRF-protected: `GET /csrf-token` first |
 | `GET` | `/csrf-token` | CSRF token for cookie sessions. Bearer callers can skip CSRF. |
 | `GET` | `/panel/api/inbounds/list` | List inbounds |
 | `POST` | `/panel/api/inbounds/add` | Create an inbound. `settings`, `streamSettings`, and `sniffing` may be nested JSON objects. |
 | `GET` | `/panel/api/inbounds/allLinks` | Share links (this skill uses `vless://`). Host follows the request `Host` header unless a trusted proxy is configured. |
-| `POST` | `/panel/api/xray/` | Read the Xray template. Docs say `obj.xraySetting` is a JSON **string**. |
+| `POST` | `/panel/api/xray/` | Read the Xray template. `obj` is a JSON **string** of `{xraySetting, inboundTags, ...}` (parse it, then read `xraySetting`). |
 | `POST` | `/panel/api/xray/update` | Form fields: `xraySetting` (required), `outboundTestUrl` (optional). |
 | `POST` | `/panel/api/server/restartXrayService` | Reload Xray |
 | `GET` | `/panel/api/server/getNewX25519Cert` | Reality keypair: `obj.privateKey`, `obj.publicKey` |
@@ -42,6 +42,21 @@ v3.6 onward the `direct` outbound also has `finalRules` that block
 `geoip:private` (SSRF hardening). This skill rewrites that when it inserts
 the `iproyal` outbound, so a `geoip:private` → `direct` rule actually works.
 
+## Client fixes (24 November 2026, re-read against v3.11.0 controllers + `docs/public/openapi.json`)
+
+- **`POST /login` is CSRF-protected** (`controller/index.go`: `middleware.CSRFMiddleware`).
+  `xui_api.py` now calls `GET /csrf-token` first (it sets the session cookie)
+  and sends `X-CSRF-Token` on `/login` and on every later POST. Before the
+  fix, cookie login would have got 403. Bearer-token callers were unaffected.
+- **`POST /panel/api/xray/` returns `obj` as a JSON string** of
+  `{xraySetting, inboundTags, ...}`. `get_xray_template()` now parses it
+  before reading `xraySetting`.
+- **Clients have their own API** under `/panel/api/clients/` (`list`,
+  `get/{email}`, `add`, `update/{email}`, `del/{email}`, `bulkEnable`,
+  `bulkDisable`, `resetTraffic/{email}`). `update` replaces the whole row. The
+  ops skill uses these; see
+  [../../vless-vpn-3xui-ops/references/api-endpoints.md](../../vless-vpn-3xui-ops/references/api-endpoints.md).
+
 ## Installer (official script, pinned)
 
 - Script is downloaded from the **tag**, not `master`:
@@ -62,8 +77,8 @@ Be honest with the user about these:
 1. **No live run** of "create VM → install 3x-ui v3.11.0 → API add inbounds →
    add SOCKS outbound → verify egress through a real IPRoyal proxy" has been
    performed for this repository.
-2. **`POST /panel/api/xray/` response wrapping.** Docs say `xraySetting` is a
-   JSON string of the raw config. `scripts/xui_api.py` also accepts a parsed
+2. **`POST /panel/api/xray/` response wrapping.** Source says `obj` is a JSON
+   string wrapping `xraySetting` (handled since 24 Nov 2026). `scripts/xui_api.py` also accepts a parsed
    object and a nested `xraySetting` wrapper, but a live panel might return a
    slightly different envelope. If `update` fails, inspect the raw response
    before merging.

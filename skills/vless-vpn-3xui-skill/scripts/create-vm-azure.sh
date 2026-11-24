@@ -34,7 +34,10 @@ fi
 log "Azure: group=$RESOURCE_GROUP location=$LOCATION size=$SIZE vm=$VM_NAME image=$IMAGE"
 log "SSH will be allowed from $OPERATOR_IP"
 
-az account show >/dev/null || die "az is not logged in; run: az login"
+# Read-only preflight: CLI, login, expected subscription (AZURE_SUBSCRIPTION), identity.
+# Prints names/ids only. Stops here if anything is off.
+AZURE_RESOURCE_GROUP="$RESOURCE_GROUP" VM_NAME="$VM_NAME" sh "$SCRIPT_DIR/cloud-preflight.sh" azure >&2 \
+  || die "cloud preflight failed (see above); nothing was created"
 
 if ! az group show --name "$RESOURCE_GROUP" >/dev/null 2>&1; then
   az group create --name "$RESOURCE_GROUP" --location "$LOCATION" --output none
