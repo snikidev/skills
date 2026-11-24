@@ -35,20 +35,28 @@ instead of WARP.
 
 ## Install the skill
 
-Clone this repo into the skills directory of the agent you use. The folder
-name must stay `vless-vpn-3xui-skill` so it matches the `name` field in
-`SKILL.md`.
+This skill lives in the [snikidev/skills](https://github.com/snikidev/skills)
+monorepo at `skills/vless-vpn-3xui-skill/`. Clone the monorepo once and link
+the folder into the skills directory of the agent you use. The folder name must
+stay `vless-vpn-3xui-skill` so it matches the `name` field in `SKILL.md`.
 
 ```bash
+git clone https://github.com/snikidev/skills.git ~/src/snikidev-skills
+S=~/src/snikidev-skills/skills/vless-vpn-3xui-skill
+
 # Claude Code (user-level)
-git clone https://github.com/snikidev/vless-vpn-3xui-skill.git ~/.claude/skills/vless-vpn-3xui-skill
+mkdir -p ~/.claude/skills && ln -s "$S" ~/.claude/skills/vless-vpn-3xui-skill
 
 # Cursor (user-level)
-git clone https://github.com/snikidev/vless-vpn-3xui-skill.git ~/.cursor/skills/vless-vpn-3xui-skill
+mkdir -p ~/.cursor/skills && ln -s "$S" ~/.cursor/skills/vless-vpn-3xui-skill
 
-# OpenCode (user-level)
-git clone https://github.com/snikidev/vless-vpn-3xui-skill.git ~/.config/opencode/skills/vless-vpn-3xui-skill
+# OpenCode / OpenChamber (user-level)
+mkdir -p ~/.config/opencode/skills && ln -s "$S" ~/.config/opencode/skills/vless-vpn-3xui-skill
 ```
+
+Copy the folder instead of linking it if you want to pin a version. Run the
+scripts from inside `skills/vless-vpn-3xui-skill/` (they resolve `templates/`
+relative to their own folder).
 
 Project-local copies also work: `.claude/skills/`, `.cursor/skills/`, or
 `.opencode/skills/` in the repo you are working in. Cursor and OpenCode will

@@ -10,12 +10,7 @@ reads the `SKILL.md` format.
 | Skill | What it does | Ships |
 |---|---|---|
 | [`netis-nx62-openwrt-safe-flash`](skills/netis-nx62-openwrt-safe-flash/) | Step-by-step, extra-safe OpenWrt install on a Netis NX62 / Netcore N60 Pro: triple-checked backups, stop after every step, typed confirmation for every flash write | 9 POSIX sh scripts, 5 references |
-
-Elsewhere:
-
-| Skill | Repo |
-|---|---|
-| `vless-vpn-3xui-skill` — VLESS Reality VPN on 3x-ui with an optional residential (ISP) SOCKS exit | [snikidev/vless-vpn-3xui-skill](https://github.com/snikidev/vless-vpn-3xui-skill) |
+| [`vless-vpn-3xui-skill`](skills/vless-vpn-3xui-skill/) | Personal VLESS Reality VPN on 3x-ui (Azure or GCP), configured through the panel API, with an optional static ISP SOCKS5 exit | 12 scripts (bash + Python), 3 references, Xray templates |
 
 ## Layout
 
