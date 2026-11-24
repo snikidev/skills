@@ -1,0 +1,27 @@
+# Secrets and local config — never commit these
+.env
+.env.*
+!.env.example
+*.env
+install-result.env
+secrets/
+*.pem
+*.key
+id_rsa
+id_ed25519
+
+# Generated client material
+out/
+*.png
+*.svg
+links.txt
+qr-*.png
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+__pycache__/
+*.pyc
+.Python
