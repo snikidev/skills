@@ -3,3 +3,7 @@
 *.itb
 *.fip
 nx62-flash/
+__pycache__/
+.pytest_cache/
+*.pyc
+.env
