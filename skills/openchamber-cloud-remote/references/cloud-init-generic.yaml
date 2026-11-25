@@ -1,0 +1,54 @@
+#cloud-config
+# Used by the GCP and AWS adapters. deploy-<provider>.sh replaces
+# ${SSH_PUBLIC_KEY} with the chosen public key before passing this as user data.
+package_update: true
+packages:
+  - ca-certificates
+  - curl
+  - unzip
+  - git
+  - build-essential
+  - python3
+
+ssh_pwauth: false
+
+users:
+  - name: azureuser
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    shell: /bin/bash
+    lock_passwd: true
+    ssh_authorized_keys:
+      - "${SSH_PUBLIC_KEY}"
+
+write_files:
+  - path: /opt/openchamber-setup.sh
+    permissions: "0755"
+    content: |
+      #!/bin/bash
+      set -euo pipefail
+
+      # The idle script on AWS uses the AWS CLI; a plain curl call is enough
+      # for Azure and GCP, but installing it everywhere keeps one template.
+      curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+      apt-get install -y nodejs
+      curl -fsSL https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip -o /tmp/awscliv2.zip
+      unzip -q /tmp/awscliv2.zip -d /tmp
+      /tmp/aws/install
+      rm -rf /tmp/aws /tmp/awscliv2.zip
+
+      su - azureuser -c "curl -fsSL https://bun.sh/install | bash"
+      su - azureuser -c "curl -fsSL https://opencode.ai/install | bash"
+
+      {
+        node --version
+        aws --version
+        su - azureuser -c "~/.bun/bin/bun --version"
+        su - azureuser -c "~/.opencode/bin/opencode --version"
+      } > /home/azureuser/openchamber-setup.log 2>&1
+
+      touch /home/azureuser/openchamber-setup.done
+      chown azureuser:azureuser /home/azureuser/openchamber-setup.log \
+        /home/azureuser/openchamber-setup.done
+
+runcmd:
+  - /opt/openchamber-setup.sh

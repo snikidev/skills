@@ -9,6 +9,7 @@ reads the `SKILL.md` format.
 
 | Skill | What it does | Ships |
 |---|---|---|
+| [`openchamber-cloud-remote`](skills/openchamber-cloud-remote/) | On-demand Azure, GCP or AWS Ubuntu VM for OpenChamber Desktop remotes: provider and VM size are explicit choices, SSH wakes it, 30-minute idle stop ends compute billing | POSIX sh deploy/identity/install/verify scripts, Bicep/cloud-init/systemd references |
 | [`netis-nx62-openwrt-safe-flash`](skills/netis-nx62-openwrt-safe-flash/) | Step-by-step, extra-safe OpenWrt install on a Netis NX62 / Netcore N60 Pro: triple-checked backups, stop after every step, typed confirmation for every flash write | 9 POSIX sh scripts, 5 references |
 | [`vless-vpn-3xui-skill`](skills/vless-vpn-3xui-skill/) | Personal VLESS Reality VPN on 3x-ui (Azure or GCP), configured through the panel API, with an optional static ISP SOCKS5 exit. Needs `az` or `gcloud` (preflight-checked) | 13 scripts (bash + Python), 3 references, Xray templates |
 | [`vless-vpn-3xui-ops`](skills/vless-vpn-3xui-ops/) | Day-2 ops for that server: status, users (caps, expiry, links/QR), routing + provider probe, backup/restore, pinned upgrades, Reality rotation, drift, and cloud snapshot/firewall/resize/IP rotation. Every action is a card (transport, endpoint, credential by name, RO/write, rollback); writes are dry runs until you say go | Python CLI (stdlib), 3 POSIX sh scripts, 6 references, mock-panel test suite |
