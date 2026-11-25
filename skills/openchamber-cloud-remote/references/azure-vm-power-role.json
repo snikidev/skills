@@ -1,0 +1,14 @@
+{
+  "Name": "OpenChamber VM Power Manager",
+  "IsCustom": true,
+  "Description": "Lets the remote VM read its own state, start itself and deallocate itself. Scoped to this one VM.",
+  "Actions": [
+    "Microsoft.Compute/virtualMachines/read",
+    "Microsoft.Compute/virtualMachines/start/action",
+    "Microsoft.Compute/virtualMachines/deallocate/action"
+  ],
+  "NotActions": [],
+  "AssignableScopes": [
+    "/subscriptions/${SUBSCRIPTION_ID}/resourceGroups/${RESOURCE_GROUP}/providers/Microsoft.Compute/virtualMachines/${VM_NAME}"
+  ]
+}
